@@ -1,0 +1,29 @@
+name: Plagiarism detector
+
+on:
+  schedule:
+    - cron:  '59 9 * * 5'
+
+jobs:
+
+  PlagiarismChecker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Plagiarism checker action
+        uses: novpeter/plagiarism-checker-action@master
+        with:
+          github-access-token: ${{ secrets.ACCESS_TOKEN }}
+          repository-name: ${{ github.repository }}
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: plagiarism-checker-report
+          path: ${{ github.workspace }}/outputs
+      
+      - name: Send matrix to Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          photo: ${{ github.workspace }}/outputs/plot.png

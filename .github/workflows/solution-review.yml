@@ -1,0 +1,89 @@
+name: Student solution review
+
+on:
+  pull_request:
+    branches: [ master ]
+    
+env:
+  SWIFTLINT_RESULT_NAME: 'SwiftLintResult.txt'
+  XCODE_TESTS_RESULT_NAME: 'TestResults.txt'
+
+jobs:
+ 
+  Linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v1
+        
+      - name: GitHub Action for SwiftLint
+        uses: novpeter/action-swiftlint@1.1
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: swift-lint-results
+          path: ${{ github.workspace }}/${{ env.SWIFTLINT_RESULT_NAME }}
+    
+  XcodeTesting:
+    runs-on: macos-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v1
+      
+      - name: Xcode test
+        uses: novpeter/xcode-run-tests-action@v1.0.37
+        with:
+          result-bundle-path: ${{ github.workspace }}/Logs/TestResults
+          screen-record-bundle-path: ${{ github.workspace }}/Logs/ScreenRecording.mp4
+
+      - name: Parse .xcresult
+        run: mkdir ${{ github.workspace }}/Scripts
+          && mkdir ${{ github.workspace }}/Scripts/xcresult-parser
+          && cd ${{ github.workspace }}/Scripts/xcresult-parser
+          && git clone https://github.com/novpeter/xcresult-parser.git ${{ github.workspace }}/Scripts/xcresult-parser
+          && cd ${{ github.workspace }}/Scripts/xcresult-parser
+          && swift build
+          && swift run XCResultParser ${{ github.workspace }}/Logs/TestResults.xcresult > ${{ github.workspace }}/Logs/${{ env.XCODE_TESTS_RESULT_NAME }}
+        shell: bash
+        
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: xcode-test-results
+          path: ${{ github.workspace }}/Logs/${{ env.XCODE_TESTS_RESULT_NAME }}
+
+  ReportCreator:
+    needs: [Linter, XcodeTesting]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: swift-lint-results
+          path: ${{ github.workspace }}/Artifacts
+     
+      - uses: actions/download-artifact@v2
+        with:
+          name: xcode-test-results
+          path: ${{ github.workspace }}/Artifacts
+          
+      - name: Generate review report
+        uses: novpeter/review-report-generator-action@v1.0
+        with:
+          swiftlint-result-path: ./Artifacts/${{ env.SWIFTLINT_RESULT_NAME }}
+          xcode-tests-result-path: ./Artifacts/${{ env.XCODE_TESTS_RESULT_NAME }}
+          author: ${{ github.event.pull_request.user.login }}
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: review-report
+          path: ${{ github.workspace }}/Artifacts/ReviewReport.txt
+      
+      - name: Send report file to Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message_file: ./Artifacts/ReviewReport.txt
