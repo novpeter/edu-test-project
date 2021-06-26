@@ -7,6 +7,7 @@ on:
 env:
   SWIFTLINT_RESULT_NAME: 'SwiftLintResult.txt'
   XCODE_TESTS_RESULT_NAME: 'TestResults.txt'
+  SCREEN_RECORDING_NAME: 'ScreenRecording.mp4'
 
 jobs:
  
@@ -47,11 +48,17 @@ jobs:
           && swift run XCResultParser ${{ github.workspace }}/Logs/TestResults.xcresult > ${{ github.workspace }}/Logs/${{ env.XCODE_TESTS_RESULT_NAME }}
         shell: bash
         
-      - name: Upload artifacts
+      - name: Upload test resutls
         uses: actions/upload-artifact@v2
         with:
           name: xcode-test-results
           path: ${{ github.workspace }}/Logs/${{ env.XCODE_TESTS_RESULT_NAME }}
+          
+      - name: Upload screen recording
+        uses: actions/upload-artifact@v2
+        with:
+          name: screen-recording
+          path: ${{ github.workspace }}/DerrivedData/${{ env.SCREEN_RECORDING_NAME }}
 
   ReportCreator:
     needs: [Linter, XcodeTesting]
@@ -65,6 +72,11 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: xcode-test-results
+          path: ${{ github.workspace }}/Artifacts
+      
+      - uses: actions/download-artifact@v2
+        with:
+          name: screen-recording
           path: ${{ github.workspace }}/Artifacts
           
       - name: Generate review report
@@ -87,3 +99,4 @@ jobs:
           token: ${{ secrets.TELEGRAM_TOKEN }}
           format: markdown
           message_file: ./Artifacts/ReviewReport.txt
+          document: ./Artifacts/${{ env.SCREEN_RECORDING_NAME }}
