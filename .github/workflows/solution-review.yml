@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v1
         
       - name: GitHub Action for SwiftLint
-        uses: novpeter/action-swiftlint@master
+        uses: novpeter/action-swiftlint@main
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v1
       
       - name: Xcode test
-        uses: novpeter/xcode-run-tests-action@master
+        uses: novpeter/xcode-run-tests-action@v1.0.37
         with:
           result-bundle-path: ${{ github.workspace }}/Logs/TestResults
           screen-record-bundle-path: ${{ github.workspace }}/Logs/ScreenRecording.mp4
