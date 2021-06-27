@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v1
         
       - name: GitHub Action for SwiftLint
-        uses: novpeter/action-swiftlint@main
+        uses: novpeter/action-swiftlint@master
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
